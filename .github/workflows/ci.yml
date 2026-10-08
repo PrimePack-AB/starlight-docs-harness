@@ -9,7 +9,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run check
@@ -27,5 +27,23 @@ jobs:
           test -f dist/concepts/sample-concept/index.html
           grep -q 'href="/starlight-docs-harness/guides/sample-guide/"' dist/concepts/sample-concept/index.html
           grep -q 'blob/main/fixture.json' dist/concepts/sample-concept/index.html
+          grep -q 'blob/main/docs/notes/internal-note.md' dist/concepts/sample-concept/index.html
           if grep -rq 'href="\.\./' dist --include='*.html'; then echo 'relative href survived rewriting'; exit 1; fi
-          if grep -rq 'href="[^"]*\.md"' dist --include='*.html'; then echo 'unrewritten .md href survived'; exit 1; fi
+          if grep -rPq 'href="(?!https?://|/)[^"]*\.md"' dist --include='*.html'; then echo 'relative .md href survived rewriting'; exit 1; fi
+  self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./
+        with:
+          docs-dir: tests/sample-docs/docs
+      - uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: github-pages
+      - name: Assert artifact content
+        run: |
+          mkdir artifact && tar -xf github-pages/artifact.tar -C artifact
+          test -f artifact/index.html
+          grep -rq 'href="/starlight-docs-harness/guides/sample-guide/"' artifact
+          grep -rq 'blob/main/docs/notes/internal-note.md' artifact
