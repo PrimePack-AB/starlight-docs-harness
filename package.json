@@ -2,7 +2,7 @@
   "name": "@primepack/starlight-docs-harness",
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.3.4",
+  "packageManager": "bun@1.4.2",
   "scripts": {
     "dev": "bash scripts/link-content.sh && astro dev",
     "build": "bash scripts/link-content.sh && astro build",
