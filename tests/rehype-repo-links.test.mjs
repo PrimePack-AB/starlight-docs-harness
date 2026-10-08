@@ -22,9 +22,13 @@ beforeAll(() => {
   fs.mkdirSync(mounts, { recursive: true });
   fs.mkdirSync(path.join(docsDir, "concepts"), { recursive: true });
   fs.mkdirSync(path.join(docsDir, "guides"), { recursive: true });
+  fs.mkdirSync(path.join(docsDir, "development"), { recursive: true });
   fs.mkdirSync(path.join(docsDir, "notes", "sandbox"), { recursive: true });
   fs.mkdirSync(path.join(tmp, "consumer", "tests", "fixtures"), { recursive: true });
   fs.writeFileSync(path.join(docsDir, "concepts", "products.md"), '---\ntitle: "Products"\n---\n');
+  fs.writeFileSync(path.join(docsDir, "concepts", "api-index.md"), '---\ntitle: "API index"\n---\n');
+  fs.writeFileSync(path.join(docsDir, "concepts", "my file.md"), '---\ntitle: "My file"\n---\n');
+  fs.writeFileSync(path.join(docsDir, "development", "index.md"), '---\ntitle: "Development"\n---\n');
   fs.writeFileSync(path.join(docsDir, "guides", "lookups.md"), '---\ntitle: "Lookups"\n---\n');
   fs.writeFileSync(path.join(docsDir, "notes", "sandbox", "findings.md"), '---\ntitle: "Findings"\n---\n');
   fs.writeFileSync(path.join(tmp, "consumer", "tests", "fixtures", "booking.json"), "{}\n");
@@ -36,7 +40,8 @@ afterAll(() => {
   fs.rmSync(tmp, { force: true, recursive: true });
 });
 
-const apply = (href, file = path.join(mounts, "guides", "lookups.md")) => {
+const transform = (href, file = path.join(mounts, "guides", "lookups.md")) => {
+  const messages = [];
   const plugin = rehypeRepoLinks({
     docsDir,
     excludeDirs: ["notes"],
@@ -45,9 +50,11 @@ const apply = (href, file = path.join(mounts, "guides", "lookups.md")) => {
     repoRef: "main",
   });
   const tree = { type: "root", children: [anchor(href)] };
-  plugin(tree, { history: [file] });
-  return tree.children[0].properties.href;
+  plugin(tree, { history: [file], message: (reason) => messages.push(reason) });
+  return { href: tree.children[0].properties.href, messages };
 };
+
+const apply = (href, file) => transform(href, file).href;
 
 it("rewrites relative markdown links inside mounted directories to site routes", () => {
   expect(apply("../concepts/products.md#the-eu-vat-area")).toBe(
@@ -71,4 +78,57 @@ it("leaves absolute, fragment-only, and mailto links untouched", () => {
   expect(apply("https://example.com/x.md")).toBe("https://example.com/x.md");
   expect(apply("#anchor")).toBe("#anchor");
   expect(apply("mailto:someone@example.org")).toBe("mailto:someone@example.org");
+});
+
+it("leaves scheme URIs without an authority untouched", () => {
+  expect(apply("tel:+46701234567")).toBe("tel:+46701234567");
+  expect(apply("MAILTO:someone@example.org")).toBe("MAILTO:someone@example.org");
+});
+
+it("leaves empty and dot-only hrefs untouched", () => {
+  expect(apply("")).toBe("");
+  expect(apply(".")).toBe(".");
+  expect(apply("./")).toBe("./");
+});
+
+it("leaves links with malformed percent-encoding untouched, with a warning", () => {
+  const { href, messages } = transform("100%.md");
+  expect(href).toBe("100%.md");
+  expect(messages).toEqual(["cannot decode percent-encoding in link target: 100%.md"]);
+});
+
+it("keeps an api-index basename in the route", () => {
+  expect(apply("../concepts/api-index.md")).toBe("/karrio-dhl-freight-sweden/concepts/api-index/");
+});
+
+it("rewrites index pages to their section-root route", () => {
+  expect(apply("../development/index.md")).toBe("/karrio-dhl-freight-sweden/development/");
+});
+
+it("decodes and slugifies percent-encoded targets to route slugs", () => {
+  expect(apply("../concepts/my%20file.md")).toBe("/karrio-dhl-freight-sweden/concepts/my-file/");
+});
+
+it("rewrites directory links to tree URLs", () => {
+  expect(apply("../concepts")).toBe(
+    "https://github.com/PrimePack-AB/karrio-dhl-freight-sweden/tree/main/docs/concepts",
+  );
+});
+
+it("warns when a mounted docs target does not exist", () => {
+  const { href, messages } = transform("../concepts/ghost.md");
+  expect(href).toBe("/karrio-dhl-freight-sweden/concepts/ghost/");
+  expect(messages).toEqual(["mounted docs link target does not exist: concepts/ghost.md"]);
+});
+
+it("warns when a repository target does not exist", () => {
+  const { href, messages } = transform("../../tests/fixtures/ghost.json");
+  expect(href).toBe("https://github.com/PrimePack-AB/karrio-dhl-freight-sweden/blob/main/tests/fixtures/ghost.json");
+  expect(messages).toEqual(["repository link target does not exist: tests/fixtures/ghost.json"]);
+});
+
+it("warns and leaves the href when a target is outside the repository", () => {
+  const { href, messages } = transform("../../../outside.md");
+  expect(href).toBe("../../../outside.md");
+  expect(messages).toEqual(["link target is outside the repository: ../../../outside.md"]);
 });
