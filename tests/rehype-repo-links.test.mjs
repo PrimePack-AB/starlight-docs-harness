@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, beforeAll, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { rehypeRepoLinks } from "../src/plugins/rehype-repo-links.mjs";
 
 let tmp;
@@ -40,6 +40,14 @@ afterAll(() => {
   fs.rmSync(tmp, { force: true, recursive: true });
 });
 
+beforeEach(() => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 const transform = (href, file = path.join(mounts, "guides", "lookups.md")) => {
   const messages = [];
   const plugin = rehypeRepoLinks({
@@ -62,10 +70,12 @@ it("rewrites relative markdown links inside mounted directories to site routes",
   );
 });
 
-it("rewrites markdown links into excluded directories to blob URLs", () => {
-  expect(apply("../notes/sandbox/findings.md")).toBe(
+it("rewrites markdown links into excluded directories to blob URLs without warnings", () => {
+  const { href, messages } = transform("../notes/sandbox/findings.md");
+  expect(href).toBe(
     "https://github.com/PrimePack-AB/karrio-dhl-freight-sweden/blob/main/docs/notes/sandbox/findings.md",
   );
+  expect(messages).toEqual([]);
 });
 
 it("rewrites repo-relative non-content links to blob URLs", () => {
@@ -119,6 +129,9 @@ it("warns when a mounted docs target does not exist", () => {
   const { href, messages } = transform("../concepts/ghost.md");
   expect(href).toBe("/karrio-dhl-freight-sweden/concepts/ghost/");
   expect(messages).toEqual(["mounted docs link target does not exist: concepts/ghost.md"]);
+  expect(console.warn).toHaveBeenCalledWith(
+    "[rehype-repo-links] mounted docs link target does not exist: concepts/ghost.md",
+  );
 });
 
 it("warns when a repository target does not exist", () => {

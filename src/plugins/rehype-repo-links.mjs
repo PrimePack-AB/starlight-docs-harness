@@ -73,7 +73,10 @@ export function rehypeRepoLinks({ docsDir, excludeDirs = ["notes"], baseUrl = ""
       if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith("//")) return;
       const [encoded, fragment] = splitFragment(href);
       if (encoded === "" || encoded === "." || encoded === "./") return;
-      const warn = (message) => file.message(message, node);
+      const warn = (message) => {
+        file.message(message, node);
+        console.warn(`[rehype-repo-links] ${message}`);
+      };
       let target;
       try {
         target = decodeURIComponent(encoded);
