@@ -30,6 +30,11 @@ const sidebar = mounts.map((dir) => ({
 export default defineConfig({
   site: process.env.SITE_URL ?? "https://primepack-ab.github.io",
   base: process.env.SITE_BASE ?? "/",
+  vite: {
+    resolve: {
+      preserveSymlinks: true,
+    },
+  },
   markdown: {
     rehypePlugins: [
       [
