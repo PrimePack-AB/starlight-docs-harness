@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
+import { mountedDirs } from "./src/mounts.mjs";
 
 const root = process.cwd();
 const docsDir = path.resolve(root, process.env.DOCS_DIR ?? "../karrio-dhl-freight-sweden/docs");
@@ -10,15 +11,17 @@ const excludeDirs = (process.env.EXCLUDE_DIRS ?? "notes")
   .map((dir) => dir.trim())
   .filter(Boolean);
 
-const mountedDirs = fs.existsSync(docsDir)
-  ? fs
-      .readdirSync(docsDir, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && !excludeDirs.includes(entry.name))
-      .map((entry) => entry.name)
-      .sort()
-  : [];
+if (!fs.existsSync(docsDir)) {
+  throw new Error(`DOCS_DIR does not exist: ${docsDir}`);
+}
 
-const sidebar = mountedDirs.map((dir) => ({
+const mounts = mountedDirs(docsDir, excludeDirs);
+
+if (mounts.length === 0) {
+  throw new Error(`no mountable docs directories in ${docsDir}`);
+}
+
+const sidebar = mounts.map((dir) => ({
   label: dir.charAt(0).toUpperCase() + dir.slice(1),
   autogenerate: { directory: dir },
 }));
