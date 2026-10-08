@@ -2,7 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
-import { mountedDirs } from "./src/mounts.mjs";
+import mermaid from "astro-mermaid";
+import { hasMermaid, mountedDirs } from "./src/mounts.mjs";
 import { rehypeRepoLinks } from "./src/plugins/rehype-repo-links.mjs";
 
 const root = process.cwd();
@@ -50,6 +51,7 @@ export default defineConfig({
     ],
   },
   integrations: [
+    ...(hasMermaid(docsDir, excludeDirs) ? [mermaid({ theme: "default", autoTheme: true })] : []),
     starlight({
       title: process.env.SITE_TITLE ?? "Docs",
       sidebar,

@@ -25,3 +25,27 @@ export function rootIndex(docsDir) {
   }
   return found[0] ?? null;
 }
+
+const MERMAID_FENCE = /^ {0,3}(`{3,}|~{3,})[ \t]*mermaid(?![\w-])/m;
+const MARKDOWN_EXTENSIONS = [".md", ".mdx"];
+
+function markdownFiles(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true, recursive: true }).flatMap((entry) => {
+    const file = path.join(entry.parentPath, entry.name);
+    const isFile = fs.statSync(file, { throwIfNoEntry: false })?.isFile() ?? false;
+    return isFile && MARKDOWN_EXTENSIONS.includes(path.extname(entry.name)) ? [file] : [];
+  });
+}
+
+/**
+ * Whether any page that renders from the docs directory (the mounted
+ * subdirectories and the root index) contains a fenced mermaid block.
+ */
+export function hasMermaid(docsDir, excludeDirs) {
+  const index = rootIndex(docsDir);
+  const files = [
+    ...(index ? [path.join(docsDir, index)] : []),
+    ...mountedDirs(docsDir, excludeDirs).flatMap((dir) => markdownFiles(path.join(docsDir, dir))),
+  ];
+  return files.some((file) => MERMAID_FENCE.test(fs.readFileSync(file, "utf8")));
+}
