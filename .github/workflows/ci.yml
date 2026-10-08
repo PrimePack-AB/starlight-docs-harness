@@ -27,5 +27,5 @@ jobs:
           test -f dist/concepts/sample-concept/index.html
           grep -q 'href="/starlight-docs-harness/guides/sample-guide/"' dist/concepts/sample-concept/index.html
           grep -q 'blob/main/fixture.json' dist/concepts/sample-concept/index.html
-          ! grep -rq 'href="\.\./' dist --include='*.html'
-          ! grep -rq 'href="[^"]*\.md"' dist --include='*.html'
+          if grep -rq 'href="\.\./' dist --include='*.html'; then echo 'relative href survived rewriting'; exit 1; fi
+          if grep -rq 'href="[^"]*\.md"' dist --include='*.html'; then echo 'unrewritten .md href survived'; exit 1; fi
