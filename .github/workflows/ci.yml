@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run check
+      - run: bun run test
+      - name: Smoke build against sample docs
+        env:
+          DOCS_DIR: ${{ github.workspace }}/tests/sample-docs/docs
+          EXCLUDE_DIRS: notes
+          SITE_BASE: /starlight-docs-harness
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          bun run build
+          test ! -e dist/notes
+          test -f dist/index.html
+          test -f dist/concepts/sample-concept/index.html
+          rg -q 'href="/starlight-docs-harness/guides/sample-guide/"' dist/concepts/sample-concept/index.html
+          rg -q 'blob/main/fixture.json' dist/concepts/sample-concept/index.html
+          ! rg -q 'href="\.\./' dist --glob '*.html'
+          ! rg -q 'href="[^"]*\.md"' dist --glob '*.html'

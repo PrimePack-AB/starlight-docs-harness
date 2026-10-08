@@ -1,0 +1,44 @@
+name: starlight-docs-harness
+description: Build a Starlight site from a repository's docs/ directory and upload a GitHub Pages artifact.
+inputs:
+  docs-dir:
+    description: Docs directory relative to the repository root.
+    default: docs
+  exclude:
+    description: Comma-separated docs subdirectories excluded from the site.
+    default: notes
+  title:
+    description: Site title. Defaults to the repository name.
+    default: ''
+  base:
+    description: Site base path. Defaults to /<repository-name> for project pages.
+    default: ''
+  repo-url:
+    description: Repository web URL used to rewrite repo-relative links.
+    default: ''
+  repo-ref:
+    description: Repository ref used to rewrite repo-relative links.
+    default: main
+runs:
+  using: composite
+  steps:
+    - uses: oven-sh/setup-bun@v2
+    - name: Build site
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        DOCS_DIR: ${{ github.workspace }}/${{ inputs.docs-dir }}
+        EXCLUDE_DIRS: ${{ inputs.exclude }}
+        SITE_TITLE: ${{ inputs.title }}
+        SITE_BASE: ${{ inputs.base }}
+        REPO_URL: ${{ inputs.repo-url }}
+        REPO_REF: ${{ inputs.repo-ref }}
+      run: |
+        export SITE_URL="${SITE_URL:-https://${GITHUB_REPOSITORY_OWNER}.github.io}"
+        export SITE_TITLE="${SITE_TITLE:-${GITHUB_REPOSITORY##*/}}"
+        export SITE_BASE="${SITE_BASE:-/${GITHUB_REPOSITORY##*/}}"
+        bun install --frozen-lockfile
+        bun run build
+    - uses: actions/upload-pages-artifact@v3
+      with:
+        path: ${{ github.action_path }}/dist
