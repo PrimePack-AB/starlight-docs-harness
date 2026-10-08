@@ -25,7 +25,7 @@ jobs:
           test ! -e dist/notes
           test -f dist/index.html
           test -f dist/concepts/sample-concept/index.html
-          rg -q 'href="/starlight-docs-harness/guides/sample-guide/"' dist/concepts/sample-concept/index.html
-          rg -q 'blob/main/fixture.json' dist/concepts/sample-concept/index.html
-          ! rg -q 'href="\.\./' dist --glob '*.html'
-          ! rg -q 'href="[^"]*\.md"' dist --glob '*.html'
+          grep -q 'href="/starlight-docs-harness/guides/sample-guide/"' dist/concepts/sample-concept/index.html
+          grep -q 'blob/main/fixture.json' dist/concepts/sample-concept/index.html
+          ! grep -rq 'href="\.\./' dist --include='*.html'
+          ! grep -rq 'href="[^"]*\.md"' dist --include='*.html'
