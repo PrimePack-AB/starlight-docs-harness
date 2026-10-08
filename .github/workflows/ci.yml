@@ -24,10 +24,31 @@ jobs:
           bun run build
           test ! -e dist/notes
           test -f dist/index.html
+          grep -q 'This site renders the' dist/index.html
           test -f dist/concepts/sample-concept/index.html
           grep -q 'href="/starlight-docs-harness/guides/sample-guide/"' dist/concepts/sample-concept/index.html
           grep -q 'blob/main/fixture.json' dist/concepts/sample-concept/index.html
           grep -q 'blob/main/docs/notes/internal-note.md' dist/concepts/sample-concept/index.html
+          if grep -rq 'href="\.\./' dist --include='*.html'; then echo 'relative href survived rewriting'; exit 1; fi
+          if grep -rPq 'href="(?!https?://|/)[^"]*\.md"' dist --include='*.html'; then echo 'relative .md href survived rewriting'; exit 1; fi
+      - name: Smoke build against sample docs with a root index
+        env:
+          DOCS_DIR: ${{ github.workspace }}/tests/sample-docs-with-index/docs
+          EXCLUDE_DIRS: notes
+          SITE_BASE: /starlight-docs-harness
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          bun run build
+          test ! -e dist/notes
+          test ! -e dist/concepts
+          if grep -q 'This site renders the' dist/index.html; then echo 'bundled landing page rendered instead of the root index'; exit 1; fi
+          grep -q 'Consumer-supplied landing page.' dist/index.html
+          grep -q 'data-has-hero' dist/index.html
+          if grep -q 'data-has-sidebar' dist/index.html; then echo 'splash template ignored'; exit 1; fi
+          grep -q 'href="/starlight-docs-harness/guides/sample-guide/"' dist/index.html
+          grep -q 'blob/main/fixture.json' dist/index.html
+          grep -q 'blob/main/docs/notes/internal-note.md' dist/index.html
+          grep -q 'href="/starlight-docs-harness/#top"' dist/guides/sample-guide/index.html
           if grep -rq 'href="\.\./' dist --include='*.html'; then echo 'relative href survived rewriting'; exit 1; fi
           if grep -rPq 'href="(?!https?://|/)[^"]*\.md"' dist --include='*.html'; then echo 'relative .md href survived rewriting'; exit 1; fi
   self-test:
