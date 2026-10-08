@@ -31,6 +31,40 @@ hero:
 Hero `actions` links are used verbatim rather than rewritten, so write them as site routes including the base path, or as absolute URLs.
 A hero `image.file` path resolves against the mounted tree, so the image must sit in a mounted subdirectory; a subdirectory holding only images still appears as a sidebar section.
 
+## MDX components
+
+Pages written as `.mdx`, including a root `index.mdx`, can import Starlight's built-in components:
+
+```mdx
+import { CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+<CardGrid>
+  <LinkCard title="Getting started" href="/consumer/guides/getting-started/" />
+</CardGrid>
+```
+
+The imports resolve against the harness's own dependencies, so the consumer repository needs no `package.json`.
+Link rewriting applies to markdown links only: `LinkCard` `href` props, like hero `actions` links, are used verbatim, so write them as site routes including the base path, or as absolute URLs.
+
+## Mermaid diagrams
+
+A fenced code block tagged `mermaid` renders as a diagram:
+
+````markdown
+```mermaid
+flowchart LR
+  docs --> site
+```
+````
+
+Diagram support switches on by itself when any mounted page or the root index contains a mermaid fence; sites without one ship no mermaid code.
+Diagrams render in the browser, so they need JavaScript; readers without it see the diagram source as preformatted text.
+Diagrams follow the site's light and dark theme toggle, and other code blocks keep their usual styling.
+
+## Favicon
+
+The harness ships a neutral default `favicon.svg`, which every page links as `<base>/favicon.svg`.
+
 ## How links rewrite
 
 Relative markdown links between mounted pages become site routes, so a `[guide](../guides/guide.md)` reference renders as a normal site URL under the base path.
