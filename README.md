@@ -8,9 +8,33 @@ The consumer keeps writing plain markdown in `docs/`; the harness supplies the s
 At build time each rendered subdirectory of the consumer's `docs/` directory is symlinked into `src/content/docs/`, so every subdirectory becomes a sidebar section.
 Subdirectories named in `EXCLUDE_DIRS` (default `notes`) are not linked and do not render.
 
+The site root renders the consumer's `docs/index.md` or `docs/index.mdx` when one exists, with the same link rewriting and frontmatter handling as every other page.
+Without one, the harness's bundled landing page renders instead; having both `index.md` and `index.mdx` fails the build.
+Other files at the top level of `docs/` are not mounted.
+
+Starlight's landing-page frontmatter works in the root index:
+
+```markdown
+---
+title: Consumer docs
+template: splash
+hero:
+  tagline: What this project does, in one line.
+  image:
+    file: ./guides/logo.svg
+  actions:
+    - text: Get started
+      link: /consumer/guides/getting-started/
+---
+```
+
+Hero `actions` links are used verbatim rather than rewritten, so write them as site routes including the base path, or as absolute URLs.
+A hero `image.file` path resolves against the mounted tree, so the image must sit in a mounted subdirectory; a subdirectory holding only images still appears as a sidebar section.
+
 ## How links rewrite
 
 Relative markdown links between mounted pages become site routes, so a `[guide](../guides/guide.md)` reference renders as a normal site URL under the base path.
+A link to the root index, such as `[home](../index.md)`, becomes the site root when the root index is mounted.
 Links to files outside the rendered tree, such as fixtures, excluded notes, and source code, become absolute GitHub `blob` or `tree` URLs built from `REPO_URL` and `REPO_REF` (default `main`).
 
 ## Local preview
