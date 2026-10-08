@@ -33,7 +33,7 @@ bun run dev
 Add the composite action to a workflow that has the consumer repository checked out; it builds the site and uploads the `github-pages` artifact.
 
 ```yaml
-- uses: PrimePack-AB/starlight-docs-harness@v1
+- uses: PrimePack-AB/starlight-docs-harness@v1.1
   with:
     repo-url: https://github.com/owner/consumer
 ```
@@ -44,8 +44,13 @@ Add the composite action to a workflow that has the consumer repository checked 
 | `exclude` | `notes` | Comma-separated docs subdirectories excluded from the site. |
 | `title` | repository name | Site title. |
 | `base` | `/<repository-name>` | Site base path for project pages. |
-| `repo-url` | empty | Repository web URL used to rewrite repo-relative links. |
+| `repo-url` | consumer repository | Repository web URL used to rewrite repo-relative links. |
 | `repo-ref` | `main` | Repository ref used to rewrite repo-relative links. |
+
+The site origin defaults to `https://<owner>.github.io`, derived from the repository owner, so canonical URLs carry the owner's letter case (`https://PrimePack-AB.github.io`); hosts are case-insensitive at the DNS level.
+Set a workflow-level `SITE_URL` environment variable to override the origin, for example for a custom domain.
+
+User-pages repositories (`<owner>.github.io`) serve from the site root and must pass `base: /` instead of relying on the derived default.
 
 The action only uploads the artifact; the consuming workflow deploys it with `actions/deploy-pages` afterwards:
 
@@ -55,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: PrimePack-AB/starlight-docs-harness@v1
+      - uses: PrimePack-AB/starlight-docs-harness@v1.1
         with:
           repo-url: https://github.com/owner/consumer
   deploy:
@@ -71,3 +76,5 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
 ```
+
+Pin the action by commit SHA in the `uses:` line if immutability matters to you; published tags are never force-moved, but a SHA pin removes even that assumption.
