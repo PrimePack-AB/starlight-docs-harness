@@ -14,7 +14,7 @@ inputs:
     description: Site base path. Defaults to /<repository-name> for project pages.
     default: ''
   repo-url:
-    description: Repository web URL used to rewrite repo-relative links.
+    description: Repository web URL used to rewrite repo-relative links. Defaults to the consumer repository.
     default: ''
   repo-ref:
     description: Repository ref used to rewrite repo-relative links.
@@ -22,7 +22,9 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: oven-sh/setup-bun@v2
+    - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      with:
+        bun-version-file: ${{ github.action_path }}/package.json
     - name: Build site
       shell: bash
       working-directory: ${{ github.action_path }}
@@ -37,8 +39,9 @@ runs:
         export SITE_URL="${SITE_URL:-https://${GITHUB_REPOSITORY_OWNER}.github.io}"
         export SITE_TITLE="${SITE_TITLE:-${GITHUB_REPOSITORY##*/}}"
         export SITE_BASE="${SITE_BASE:-/${GITHUB_REPOSITORY##*/}}"
+        export REPO_URL="${REPO_URL:-${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}}"
         bun install --frozen-lockfile
         bun run build
-    - uses: actions/upload-pages-artifact@v3
+    - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
       with:
         path: ${{ github.action_path }}/dist
