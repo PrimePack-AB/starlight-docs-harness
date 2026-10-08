@@ -3,6 +3,7 @@ import path from "node:path";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import { mountedDirs } from "./src/mounts.mjs";
+import { rehypeRepoLinks } from "./src/plugins/rehype-repo-links.mjs";
 
 const root = process.cwd();
 const docsDir = path.resolve(root, process.env.DOCS_DIR ?? "../karrio-dhl-freight-sweden/docs");
@@ -29,6 +30,20 @@ const sidebar = mounts.map((dir) => ({
 export default defineConfig({
   site: process.env.SITE_URL ?? "https://primepack-ab.github.io",
   base: process.env.SITE_BASE ?? "/",
+  markdown: {
+    rehypePlugins: [
+      [
+        rehypeRepoLinks,
+        {
+          docsDir,
+          excludeDirs,
+          baseUrl: process.env.SITE_BASE?.replace(/\/$/, "") ?? "",
+          repoUrl: process.env.REPO_URL ?? "",
+          repoRef: process.env.REPO_REF ?? "main",
+        },
+      ],
+    ],
+  },
   integrations: [
     starlight({
       title: process.env.SITE_TITLE ?? "Docs",
