@@ -91,7 +91,7 @@ bun run dev
 Add the composite action to a workflow that has the consumer repository checked out; it builds the site and uploads the `github-pages` artifact.
 
 ```yaml
-- uses: PrimePack-AB/starlight-docs-harness@v1.2
+- uses: PrimePack-AB/starlight-docs-harness@v1.3
   with:
     repo-url: https://github.com/owner/consumer
 ```
@@ -118,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: PrimePack-AB/starlight-docs-harness@v1.2
+      - uses: PrimePack-AB/starlight-docs-harness@v1.3
         with:
           repo-url: https://github.com/owner/consumer
   deploy:
