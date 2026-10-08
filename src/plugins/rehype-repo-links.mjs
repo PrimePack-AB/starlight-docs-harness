@@ -1,19 +1,21 @@
 import fs from "node:fs";
 import path from "node:path";
 import { slug as githubSlug } from "github-slugger";
-import { mountedDirs } from "../mounts.mjs";
+import { mountedDirs, rootIndex } from "../mounts.mjs";
 
 const MD_EXT = /\.(md|mdx)$/;
 
 /**
  * Rewrite relative links in docs pages: targets inside mounted docs
- * subdirectories become site routes; every other relative target becomes an
+ * subdirectories, and the docs directory's root index when it has one, become
+ * site routes; every other relative target becomes an
  * absolute GitHub blob or tree URL against the source repository. Unusable
  * targets (missing files, targets outside the repository) are reported as
  * vfile warnings and otherwise rewritten or left as-is unchanged.
  */
 export function rehypeRepoLinks({ docsDir, excludeDirs = ["notes"], baseUrl = "", repoUrl = "", repoRef = "main" }) {
   const mounts = new Set(mountedDirs(docsDir, excludeDirs));
+  const landingPage = rootIndex(docsDir);
 
   const splitFragment = (href) => {
     const index = href.indexOf("#");
@@ -25,6 +27,7 @@ export function rehypeRepoLinks({ docsDir, excludeDirs = ["notes"], baseUrl = ""
     const resolved = path.resolve(path.dirname(realFile), target);
     const rel = path.relative(docsDir, resolved);
     if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
+    if (landingPage && rel === landingPage) return `${baseUrl}/${fragment}`;
     if (!mounts.has(rel.split(path.sep)[0])) return null;
     if (!fs.existsSync(resolved)) {
       warn(`mounted docs link target does not exist: ${rel}`);
