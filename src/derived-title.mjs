@@ -1,5 +1,9 @@
+/**
+ * Derives a page title from the markdown body and the content-collection id.
+ * An empty return means nothing derived; the caller leaves the entry untouched.
+ */
 export function deriveTitle(body, id) {
-  const heading = body.match(/^#\s+(.+?)\s*$/m);
+  const heading = body.match(/^[ \t]{0,3}#[ \t]+(.+?)[ \t]*$/m);
   if (heading) {
     return heading[1];
   }

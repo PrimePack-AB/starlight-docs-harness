@@ -65,6 +65,18 @@ describe("deriveTitle", () => {
   it("returns an empty string when nothing derives", () => {
     expect(deriveTitle("body", "index")).toBe("");
   });
+
+  it("does not capture the next line from a heading without text", () => {
+    expect(deriveTitle("# \nSome text", "guides/page")).toBe("Page");
+  });
+
+  it("accepts up to three spaces of heading indentation", () => {
+    expect(deriveTitle("   # Indented heading\n", "guides/x")).toBe("Indented heading");
+  });
+
+  it("returns an empty string for a bare top-level readme", () => {
+    expect(deriveTitle("body", "readme")).toBe("");
+  });
 });
 ```
 
@@ -72,8 +84,12 @@ describe("deriveTitle", () => {
 - [ ] **Step 3: Write minimal implementation** — create `src/derived-title.mjs`:
 
 ```js
+/**
+ * Derives a page title from the markdown body and the content-collection id.
+ * An empty return means nothing derived; the caller leaves the entry untouched.
+ */
 export function deriveTitle(body, id) {
-  const heading = body.match(/^#\s+(.+?)\s*$/m);
+  const heading = body.match(/^[ \t]{0,3}#[ \t]+(.+?)[ \t]*$/m);
   if (heading) {
     return heading[1];
   }

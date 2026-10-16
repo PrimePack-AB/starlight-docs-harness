@@ -25,4 +25,16 @@ describe("deriveTitle", () => {
   it("returns an empty string when nothing derives", () => {
     expect(deriveTitle("body", "index")).toBe("");
   });
+
+  it("does not capture the next line from a heading without text", () => {
+    expect(deriveTitle("# \nSome text", "guides/page")).toBe("Page");
+  });
+
+  it("accepts up to three spaces of heading indentation", () => {
+    expect(deriveTitle("   # Indented heading\n", "guides/x")).toBe("Indented heading");
+  });
+
+  it("returns an empty string for a bare top-level readme", () => {
+    expect(deriveTitle("body", "readme")).toBe("");
+  });
 });
