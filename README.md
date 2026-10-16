@@ -31,6 +31,13 @@ hero:
 Hero `actions` links are used verbatim rather than rewritten, so write them as site routes including the base path, or as absolute URLs.
 A hero `image.file` path resolves against the mounted tree, so the image must sit in a mounted subdirectory; a subdirectory holding only images still appears as a sidebar section.
 
+## Page titles
+
+Every page renders with a title.
+Explicit `title` frontmatter wins; without one the harness derives the title from the page's first `# ` heading, falling back to the directory name for `index` and `README` pages and to the filename otherwise.
+The heading search is naive: a commented line inside a fenced code block counts as a heading when it comes first.
+The build log names each derived title on a fresh sync, so add explicit frontmatter wherever the derived wording is not what you want.
+
 ## MDX components
 
 Pages written as `.mdx`, including a root `index.mdx`, can import Starlight's built-in components:
