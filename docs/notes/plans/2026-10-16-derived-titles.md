@@ -80,7 +80,11 @@ export function deriveTitle(body, id) {
   const segments = id.split("/").filter(Boolean);
   let last = segments.pop() ?? "";
   if (last === "index" || last === "readme") {
-    last = segments.pop() ?? last;
+    const parent = segments.pop();
+    if (parent === undefined) {
+      return "";
+    }
+    last = parent;
   }
   const words = last.replaceAll("-", " ").trim();
   if (!words) {
