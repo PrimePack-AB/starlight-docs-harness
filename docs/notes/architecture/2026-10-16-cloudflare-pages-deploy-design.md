@@ -48,8 +48,8 @@ Passing `--branch` explicitly — defaulting to `main` through the existing `rep
 Wrangler ships as a harness devDependency, so the existing `bun install --frozen-lockfile` step pins its version through `bun.lock`.
 This mirrors the repository's SHA-pinned action hygiene and gives consumers reproducible deploys.
 
-The first deploy to a new project is expected to auto-create the Pages project non-interactively.
-If verification shows otherwise, the README documents `wrangler pages project create <name> --production-branch=main` as the one-time setup command.
+Before deploying, the step runs `wrangler pages project create <name> --production-branch=<repo-ref>` guarded with `|| true`: the create succeeds on the first deploy and fails harmlessly once the project exists, while any real authentication or network failure surfaces in the deploy that follows.
+Cloudflare's wrangler command reference and direct-upload documentation (checked 2026-10-16) confirm that `wrangler pages deploy` prompts interactively when the project does not exist — which non-interactive CI cannot answer — and offers no `--dry-run` flag.
 
 ### Documentation
 
@@ -57,9 +57,8 @@ The README gains a "Deploying to Cloudflare Pages" section with the consumer wor
 
 ## Verification
 
-CI extends the `self-test` job with a Cloudflare-mode pass that runs the action with `deploy-target: cloudflare` and asserts the built HTML carries the `pages.dev` canonical URL and root base path.
-A `bunx wrangler pages deploy dist --dry-run` invocation (no credentials required) proves the pinned wrangler resolves and `dist` is deployable.
-One manual deployment to a scratch Pages project validates the real path before tagging the release as `v1.4`.
+CI adds a Cloudflare-mode self-test that runs the action with `deploy-target: cloudflare`, asserts the deploy step fails fast while `CLOUDFLARE_API_TOKEN` is unset, and asserts the built HTML carries the `pages.dev` site URL and root base path.
+A `bunx wrangler --version` step proves the pinned wrangler resolves through the frozen lockfile; because `wrangler pages deploy` has no `--dry-run` flag, deployability is confirmed by one manual deployment to a scratch Pages project before tagging the release as `v1.4`.
 
 ## Out of scope
 
