@@ -121,4 +121,4 @@ jobs:
         run: |
           test -x node_modules/.bin/wrangler
           expected="$(bun -e 'console.log(require("./node_modules/wrangler/package.json").version)')"
-          bunx wrangler --version | grep -qF "$expected"
+          node_modules/.bin/wrangler --version | grep -qF "$expected"
