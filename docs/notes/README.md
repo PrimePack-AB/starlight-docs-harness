@@ -5,5 +5,5 @@ Each note eventually migrates into the formal tree or is discarded.
 
 ## Index
 
-- `architecture/2026-10-16-cloudflare-pages-deploy-design.md` — design for the opt-in Cloudflare Pages deployment target in the composite action (created 2026-10-16).
-- `plans/2026-10-16-cloudflare-pages-deploy.md` — task-by-task implementation plan for the Cloudflare Pages deployment target (created 2026-10-16).
+No active notes.
+The cloudflare pages deployment notes were retired 2026-10-16 after the feature shipped in `v1.4`; the README carries their content.
