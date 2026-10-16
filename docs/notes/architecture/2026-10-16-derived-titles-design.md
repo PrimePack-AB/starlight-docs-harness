@@ -26,7 +26,7 @@ Each derivation logs a warning naming the entry and the derived title, so consum
 ## Verification
 
 Vitest unit tests cover every derivation branch (heading, index fallback, README fallback, plain filename, empty).
-A CI smoke fixture of untitled pages — one heading-only, one without a heading, one heading-less `index.md` — asserts the build succeeds and the rendered sidebar carries the derived titles.
+A CI smoke fixture of untitled pages — one heading-only, one without a heading, one heading-less `index.md` — asserts the build succeeds and the built pages carry the derived titles in their title elements.
 Release as `v1.5` after CI is green; consumers on `v1.4` are unaffected until they bump.
 
 ## Out of scope

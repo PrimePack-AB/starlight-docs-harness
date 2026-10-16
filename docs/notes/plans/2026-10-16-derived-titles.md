@@ -255,7 +255,7 @@ git commit -m "feat: inject derived titles at the content loader seam"
 **Files:**
 - Modify: `README.md`
 
-- [ ] **Step 1:** After the "How content mounts" section, insert:
+- [x] **Step 1:** After the "How content mounts" section, insert:
 
 ```markdown
 ## Page titles
@@ -265,7 +265,7 @@ Explicit `title` frontmatter wins; without one the harness derives the title fro
 The build log names each derived title, so add explicit frontmatter wherever the derived wording is not what you want.
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add README.md
