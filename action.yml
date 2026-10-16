@@ -1,5 +1,5 @@
 name: starlight-docs-harness
-description: Build a Starlight site from a repository's docs/ directory and upload a GitHub Pages artifact.
+description: Build a Starlight site from a repository's docs/ directory and deploy it to GitHub Pages or Cloudflare Pages.
 inputs:
   docs-dir:
     description: Docs directory relative to the repository root.
@@ -11,14 +11,20 @@ inputs:
     description: Site title. Defaults to the repository name.
     default: ''
   base:
-    description: Site base path. Defaults to /<repository-name> for project pages.
+    description: Site base path. Defaults to /<repository-name> for project pages and / for Cloudflare Pages.
     default: ''
   repo-url:
     description: Repository web URL used to rewrite repo-relative links. Defaults to the consumer repository.
     default: ''
   repo-ref:
-    description: Repository ref used to rewrite repo-relative links.
+    description: Repository ref used to rewrite repo-relative links; with deploy-target cloudflare also the deployed branch.
     default: main
+  deploy-target:
+    description: Deployment target. github-pages uploads the Pages artifact; cloudflare deploys with wrangler.
+    default: github-pages
+  project-name:
+    description: Cloudflare Pages project name. Defaults to the repository name lowercased with non-alphanumerics collapsed to hyphens.
+    default: ''
 runs:
   using: composite
   steps:
@@ -35,13 +41,38 @@ runs:
         SITE_BASE: ${{ inputs.base }}
         REPO_URL: ${{ inputs.repo-url }}
         REPO_REF: ${{ inputs.repo-ref }}
+        DEPLOY_TARGET: ${{ inputs.deploy-target }}
+        PROJECT_NAME: ${{ inputs.project-name }}
       run: |
-        export SITE_URL="${SITE_URL:-https://${GITHUB_REPOSITORY_OWNER}.github.io}"
+        if [ "$DEPLOY_TARGET" = cloudflare ]; then
+          project_name="$(bun scripts/pages-project-name.mjs "$PROJECT_NAME" "${GITHUB_REPOSITORY##*/}")"
+          echo "PROJECT_NAME=$project_name" >> "$GITHUB_ENV"
+          export SITE_URL="${SITE_URL:-https://${project_name}.pages.dev}"
+          export SITE_BASE="${SITE_BASE:-/}"
+        else
+          export SITE_URL="${SITE_URL:-https://${GITHUB_REPOSITORY_OWNER}.github.io}"
+          export SITE_BASE="${SITE_BASE:-/${GITHUB_REPOSITORY##*/}}"
+        fi
         export SITE_TITLE="${SITE_TITLE:-${GITHUB_REPOSITORY##*/}}"
-        export SITE_BASE="${SITE_BASE:-/${GITHUB_REPOSITORY##*/}}"
         export REPO_URL="${REPO_URL:-${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}}"
         bun install --frozen-lockfile
         bun run build
     - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+      if: ${{ inputs.deploy-target == 'github-pages' }}
       with:
         path: ${{ github.action_path }}/dist
+    - name: Deploy to Cloudflare Pages
+      if: ${{ inputs.deploy-target == 'cloudflare' }}
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        REPO_REF: ${{ inputs.repo-ref }}
+      run: |
+        if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+          echo 'deploy-target is cloudflare but CLOUDFLARE_API_TOKEN is not set.' >&2
+          echo 'Add it to the environment of the job or step from the repository secrets:' >&2
+          echo '  CLOUDFLARE_API_TOKEN: <secrets.CLOUDFLARE_API_TOKEN>' >&2
+          exit 1
+        fi
+        node_modules/.bin/wrangler pages project create "${PROJECT_NAME:?}" --production-branch "$REPO_REF" >/dev/null 2>&1 || true
+        node_modules/.bin/wrangler pages deploy dist --project-name "${PROJECT_NAME:?}" --branch "$REPO_REF" --commit-hash "$GITHUB_SHA"
