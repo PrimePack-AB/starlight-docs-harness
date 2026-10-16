@@ -17,8 +17,9 @@ Empty derivation leaves the entry untouched so the existing schema error still s
 Explicit `title` frontmatter always wins; nothing changes for titled pages.
 
 Integration happens at the loader seam, not the schema.
-`docsLoader()` exposes no frontmatter transform and the schema cannot see filenames, but Astro's content layer validates entries against the schema only after the loader populates the store — so a wrapping loader can inject missing titles into the store before validation reads them.
-The wrapper delegates to Starlight's `docsLoader()`, then makes one pass over entries lacking `data.title`, reading each body from the store entry (or the file at `filePath` when the store omits bodies).
+`docsLoader()` exposes no frontmatter transform and the schema cannot see filenames; Astro's glob loader validates each entry against the schema through the `parseData` hook on the loader context, inside the inner load — so the wrapper intercepts `parseData`, injects a missing title into the raw frontmatter data, and delegates to the real `parseData` before validation sees the entry.
+(The original design assumed validation ran after store population; the implementation probe falsified that — the error throws from within `inner.load` — and moved the injection one hook earlier.)
+The wrapper reads each file at `entry.filePath` and strips a leading frontmatter block, since the raw file includes frontmatter.
 
 Each derivation logs a warning naming the entry and the derived title, so consumers see what was inferred and can add explicit frontmatter where they want different wording.
 
