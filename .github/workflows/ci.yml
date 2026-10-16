@@ -118,4 +118,7 @@ jobs:
           grep -q 'href="/favicon.svg"' dist/index.html
           grep -q 'href="/guides/sample-guide/"' dist/concepts/sample-concept/index.html
       - name: Assert the pinned wrangler resolves
-        run: bunx wrangler --version
+        run: |
+          test -x node_modules/.bin/wrangler
+          expected="$(bun -e 'console.log(require("./node_modules/wrangler/package.json").version)')"
+          bunx wrangler --version | grep -qF "$expected"
