@@ -23,7 +23,7 @@ inputs:
     description: Deployment target. github-pages uploads the Pages artifact; cloudflare deploys with wrangler.
     default: github-pages
   project-name:
-    description: Cloudflare Pages project name. Defaults to the repository name lowercased with non-alphanumerics collapsed to hyphens.
+    description: Cloudflare Pages project name, normalized to lowercase alphanumerics and hyphens. Defaults to the repository name so normalized.
     default: ''
 runs:
   using: composite
@@ -44,9 +44,16 @@ runs:
         DEPLOY_TARGET: ${{ inputs.deploy-target }}
         PROJECT_NAME: ${{ inputs.project-name }}
       run: |
+        case "$DEPLOY_TARGET" in
+          github-pages|cloudflare) ;;
+          *)
+            echo "deploy-target must be github-pages or cloudflare, got '$DEPLOY_TARGET'" >&2
+            exit 1
+            ;;
+        esac
         if [ "$DEPLOY_TARGET" = cloudflare ]; then
           project_name="$(bun scripts/pages-project-name.mjs "$PROJECT_NAME" "${GITHUB_REPOSITORY##*/}")"
-          echo "PROJECT_NAME=$project_name" >> "$GITHUB_ENV"
+          echo "HARNESS_PROJECT_NAME=$project_name" >> "$GITHUB_ENV"
           export SITE_URL="${SITE_URL:-https://${project_name}.pages.dev}"
           export SITE_BASE="${SITE_BASE:-/}"
         else
@@ -74,5 +81,5 @@ runs:
           echo '  CLOUDFLARE_API_TOKEN: <secrets.CLOUDFLARE_API_TOKEN>' >&2
           exit 1
         fi
-        node_modules/.bin/wrangler pages project create "${PROJECT_NAME:?}" --production-branch "$REPO_REF" >/dev/null 2>&1 || true
-        node_modules/.bin/wrangler pages deploy dist --project-name "${PROJECT_NAME:?}" --branch "$REPO_REF" --commit-hash "$GITHUB_SHA"
+        node_modules/.bin/wrangler pages project create "${HARNESS_PROJECT_NAME:?}" --production-branch "$REPO_REF" >/dev/null 2>&1 || true
+        node_modules/.bin/wrangler pages deploy dist --project-name "${HARNESS_PROJECT_NAME:?}" --branch "$REPO_REF" --commit-hash "$GITHUB_SHA"
