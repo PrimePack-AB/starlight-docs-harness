@@ -1,7 +1,7 @@
 # starlight-docs-harness
 
-A reusable Starlight application that publishes any repository's `docs/` tree to GitHub Pages with zero JavaScript in the consuming repository.
-The consumer keeps writing plain markdown in `docs/`; the harness supplies the site shell, the build, and the Pages artifact.
+A reusable Starlight application that publishes any repository's `docs/` tree to GitHub Pages or Cloudflare Pages with zero JavaScript in the consuming repository.
+The consumer keeps writing plain markdown in `docs/`; the harness supplies the site shell, the build, and the deployment.
 
 ## How content mounts
 
@@ -88,10 +88,10 @@ bun run dev
 
 ## Usage as an action
 
-Add the composite action to a workflow that has the consumer repository checked out; it builds the site and uploads the `github-pages` artifact.
+Add the composite action to a workflow that has the consumer repository checked out; it builds the site and, with the default target, uploads the `github-pages` artifact.
 
 ```yaml
-- uses: PrimePack-AB/starlight-docs-harness@v1.3
+- uses: PrimePack-AB/starlight-docs-harness@v1.4
   with:
     repo-url: https://github.com/owner/consumer
 ```
@@ -101,16 +101,20 @@ Add the composite action to a workflow that has the consumer repository checked 
 | `docs-dir` | `docs` | Docs directory relative to the repository root. |
 | `exclude` | `notes` | Comma-separated docs subdirectories excluded from the site. |
 | `title` | repository name | Site title. |
-| `base` | `/<repository-name>` | Site base path for project pages. |
+| `base` | `/<repository-name>` | Site base path. Defaults to `/<repository-name>` for project pages and `/` for Cloudflare Pages. |
 | `repo-url` | consumer repository | Repository web URL used to rewrite repo-relative links. |
-| `repo-ref` | `main` | Repository ref used to rewrite repo-relative links. |
+| `repo-ref` | `main` | Repository ref used to rewrite repo-relative links; with `deploy-target: cloudflare`, also the deployed branch. |
+| `deploy-target` | `github-pages` | Deployment target. `github-pages` uploads the Pages artifact; `cloudflare` deploys with wrangler. |
+| `project-name` | derived | Cloudflare Pages project name, normalized to lowercase alphanumerics and hyphens; defaults to the repository name so normalized. |
 
 The site origin defaults to `https://<owner>.github.io`, derived from the repository owner, so canonical URLs carry the owner's letter case (`https://PrimePack-AB.github.io`); hosts are case-insensitive at the DNS level.
 Set a workflow-level `SITE_URL` environment variable to override the origin, for example for a custom domain.
 
 User-pages repositories (`<owner>.github.io`) serve from the site root and must pass `base: /` instead of relying on the derived default.
 
-The action only uploads the artifact; the consuming workflow deploys it with `actions/deploy-pages` afterwards:
+With `deploy-target: cloudflare` the origin defaults to `https://<project>.pages.dev` and the base path to `/`; a workflow-level `SITE_URL` override points the build at a custom domain, which you then add in the Cloudflare dashboard.
+
+With the default `github-pages` target the action only uploads the artifact; the consuming workflow deploys it with `actions/deploy-pages` afterwards:
 
 ```yaml
 jobs:
@@ -118,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: PrimePack-AB/starlight-docs-harness@v1.3
+      - uses: PrimePack-AB/starlight-docs-harness@v1.4
         with:
           repo-url: https://github.com/owner/consumer
   deploy:
@@ -134,5 +138,30 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
 ```
+
+## Deploying to Cloudflare Pages
+
+Set `deploy-target: cloudflare` and expose a Cloudflare API token as environment; the action deploys the built site with wrangler itself, so no deploy job is needed.
+
+```yaml
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PrimePack-AB/starlight-docs-harness@v1.4
+        with:
+          repo-url: https://github.com/owner/consumer
+          deploy-target: cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+```
+
+The token needs the Cloudflare Pages `Edit` permission; set `CLOUDFLARE_ACCOUNT_ID` when the token spans multiple accounts.
+The Pages project name is normalized to lowercase alphanumerics and hyphens whether derived from the repository name or passed through `project-name`; pass `project-name` when the repository name is very long or you want a different name.
+Deployments carry the `repo-ref` input as their branch: the default `main` deploys to production, and any other branch yields a Pages preview URL that leaves production untouched.
+To follow the triggering branch instead, pass `repo-ref: ${{ github.ref_name }}`.
+The first deployment creates the project with `repo-ref` as its production branch, so give the first run the `repo-ref` you will treat as production; a first run from another branch pins production there and later `main` deployments silently become previews.
 
 Pin the action by commit SHA in the `uses:` line if immutability matters to you; published tags are never force-moved, but a SHA pin removes even that assumption.

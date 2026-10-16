@@ -100,3 +100,25 @@ jobs:
           grep -rq 'href="/starlight-docs-harness/guides/sample-guide/"' artifact
           grep -rq 'blob/main/docs/notes/internal-note.md' artifact
           test -f artifact/favicon.svg
+  self-test-cloudflare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - id: cloudflare
+        continue-on-error: true
+        uses: ./
+        with:
+          docs-dir: tests/sample-docs/docs
+          deploy-target: cloudflare
+      - name: Assert the deploy failed fast without a token
+        run: test "${{ steps.cloudflare.outcome }}" = failure
+      - name: Assert the cloudflare-mode build
+        run: |
+          grep -q 'https://starlight-docs-harness.pages.dev' dist/index.html
+          grep -q 'href="/favicon.svg"' dist/index.html
+          grep -q 'href="/guides/sample-guide/"' dist/concepts/sample-concept/index.html
+      - name: Assert the pinned wrangler resolves
+        run: |
+          test -x node_modules/.bin/wrangler
+          expected="$(bun -e 'console.log(require("./node_modules/wrangler/package.json").version)')"
+          node_modules/.bin/wrangler --version | grep -qF "$expected"
