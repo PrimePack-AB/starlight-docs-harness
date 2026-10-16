@@ -48,6 +48,7 @@ Passing `--branch` explicitly — defaulting to `main` through the existing `rep
 Wrangler ships as a harness devDependency, so the existing `bun install --frozen-lockfile` step pins its version through `bun.lock`.
 This mirrors the repository's SHA-pinned action hygiene and gives consumers reproducible deploys.
 
+The deploy invokes the locked binary directly (`node_modules/.bin/wrangler`) rather than through `bunx`, so a missing local install fails loudly instead of letting bunx silently fetch an unpinned wrangler from the registry.
 Before deploying, the step runs `wrangler pages project create <name> --production-branch=<repo-ref>` guarded with `|| true`: the create succeeds on the first deploy and fails harmlessly once the project exists, while any real authentication or network failure surfaces in the deploy that follows.
 Cloudflare's wrangler command reference and direct-upload documentation (checked 2026-10-16) confirm that `wrangler pages deploy` prompts interactively when the project does not exist — which non-interactive CI cannot answer — and offers no `--dry-run` flag.
 

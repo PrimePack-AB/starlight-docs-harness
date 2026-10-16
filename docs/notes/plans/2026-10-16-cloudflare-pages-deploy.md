@@ -300,11 +300,12 @@ runs:
           echo '  CLOUDFLARE_API_TOKEN: <secrets.CLOUDFLARE_API_TOKEN>' >&2
           exit 1
         fi
-        bunx wrangler pages project create "${PROJECT_NAME:?}" --production-branch "$REPO_REF" >/dev/null 2>&1 || true
-        bunx wrangler pages deploy dist --project-name "${PROJECT_NAME:?}" --branch "$REPO_REF" --commit-hash "$GITHUB_SHA"
+        node_modules/.bin/wrangler pages project create "${PROJECT_NAME:?}" --production-branch "$REPO_REF" >/dev/null 2>&1 || true
+        node_modules/.bin/wrangler pages deploy dist --project-name "${PROJECT_NAME:?}" --branch "$REPO_REF" --commit-hash "$GITHUB_SHA"
 ```
 
 Notes for the implementer:
+- The deploy step invokes `node_modules/.bin/wrangler` directly instead of the plan's original `bunx wrangler` — a quality-review decision (authorized deviation) so a missing local install fails loudly rather than letting bunx fetch an unpinned wrangler from the registry.
 - `SITE_URL` is deliberately absent from the step `env:` — a workflow-level `SITE_URL` override reaches the script through the inherited environment, preserving the documented custom-domain mechanism.
 - The `pages project create ... || true` swallow is safe: any real authentication or network failure surfaces in the deploy that immediately follows; only the "already exists" case is tolerated.
 - `PROJECT_NAME` reaches the deploy step through `GITHUB_ENV` written by the build step; `${PROJECT_NAME:?}` fails loudly if that contract breaks.
