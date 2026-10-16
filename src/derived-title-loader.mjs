@@ -3,14 +3,15 @@ import { docsLoader } from "@astrojs/starlight/loaders";
 import { deriveTitle } from "./derived-title.mjs";
 
 function stripFrontmatter(raw) {
-  const match = raw.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
-  return match ? raw.slice(match[0].length) : raw;
+  const match = raw.match(/(?:^\uFEFF?|^\s*\n)(?:---|\+\+\+)([\s\S]*?\n)(?:---|\+\+\+)/);
+  return match ? raw.replace(match[0], "") : raw;
 }
 
 /**
  * Astro's glob loader validates each entry against the collection schema via
  * the `parseData` hook it pulls off the loader context, so titles must be
- * injected before the inner loader runs, not after.
+ * injected inside that hook — a post-load pass over the store runs after
+ * validation has already failed.
  */
 export function docsLoaderWithDerivedTitles() {
   const inner = docsLoader();
