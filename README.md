@@ -1,7 +1,7 @@
 # starlight-docs-harness
 
 A reusable Starlight application that publishes any repository's `docs/` tree to GitHub Pages or Cloudflare Pages with zero JavaScript in the consuming repository.
-The consumer keeps writing plain markdown in `docs/`; the harness supplies the site shell, the build, and the Pages artifact.
+The consumer keeps writing plain markdown in `docs/`; the harness supplies the site shell, the build, and the deployment.
 
 ## How content mounts
 
@@ -88,7 +88,7 @@ bun run dev
 
 ## Usage as an action
 
-Add the composite action to a workflow that has the consumer repository checked out; it builds the site and uploads the `github-pages` artifact.
+Add the composite action to a workflow that has the consumer repository checked out; it builds the site and, with the default target, uploads the `github-pages` artifact.
 
 ```yaml
 - uses: PrimePack-AB/starlight-docs-harness@v1.4
@@ -161,6 +161,7 @@ jobs:
 The token needs the Cloudflare Pages `Edit` permission; set `CLOUDFLARE_ACCOUNT_ID` when the token spans multiple accounts.
 The Pages project name is normalized to lowercase alphanumerics and hyphens whether derived from the repository name or passed through `project-name`; pass `project-name` when the repository name is very long or you want a different name.
 Deployments carry the `repo-ref` input as their branch: the default `main` deploys to production, and any other branch yields a Pages preview URL that leaves production untouched.
+To follow the triggering branch instead, pass `repo-ref: ${{ github.ref_name }}`.
 The first deployment creates the project with `repo-ref` as its production branch, so give the first run the `repo-ref` you will treat as production; a first run from another branch pins production there and later `main` deployments silently become previews.
 
 Pin the action by commit SHA in the `uses:` line if immutability matters to you; published tags are never force-moved, but a SHA pin removes even that assumption.
