@@ -190,45 +190,59 @@ This step is red until Task 3 lands — same ordering intent as the v1.4 cloudfl
 - Create: `src/derived-title-loader.mjs`
 - Modify: `src/content.config.ts`
 
-- [ ] **Step 1: Create the wrapper** — `src/derived-title-loader.mjs`:
+Mechanism note (post-implementation, commit 6162aac): the original plan placed injection in a post-load pass over the content store, on the premise that Astro validates entries against the schema only after the loader populates the store.
+The Step 2 probe falsified that premise: Astro's glob loader validates each entry inside the inner load via `ctx.parseData` (`getEntryData` throws `InvalidContentEntryDataError` from within `inner.load`), so the post-load loop never executed.
+The landed mechanism intercepts `parseData` instead — same seam goal (inject before validation sees the entry), same warning format, same `deriveTitle` contract — and strips a leading frontmatter block because the raw file read includes frontmatter.
+The listing below is the landed code.
+
+- [x] **Step 1: Create the wrapper** — `src/derived-title-loader.mjs`:
 
 ```js
 import { readFile } from "node:fs/promises";
 import { docsLoader } from "@astrojs/starlight/loaders";
 import { deriveTitle } from "./derived-title.mjs";
 
+function stripFrontmatter(raw) {
+  const match = raw.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
+  return match ? raw.slice(match[0].length) : raw;
+}
+
+/**
+ * Astro's glob loader validates each entry against the collection schema via
+ * the `parseData` hook it pulls off the loader context, so titles must be
+ * injected before the inner loader runs, not after.
+ */
 export function docsLoaderWithDerivedTitles() {
   const inner = docsLoader();
   return {
     ...inner,
     name: "starlight-docs-loader-with-derived-titles",
     async load(ctx) {
-      await inner.load(ctx);
-      for (const [id, entry] of ctx.store.entries()) {
-        if (entry.data?.title) {
-          continue;
-        }
-        const body =
-          typeof entry.body === "string"
-            ? entry.body
-            : await readFile(entry.filePath, "utf8").catch(() => "");
-        const title = deriveTitle(body, id);
-        if (!title) {
-          continue;
-        }
-        ctx.logger.warn(`derived title "${title}" for ${id}`);
-        ctx.store.set({ ...entry, id, data: { ...entry.data, title } });
-      }
+      const { logger, parseData } = ctx;
+      await inner.load({
+        ...ctx,
+        async parseData(entry) {
+          if (!entry.data?.title) {
+            const raw = await readFile(entry.filePath, "utf8").catch(() => "");
+            const title = deriveTitle(stripFrontmatter(raw), entry.id);
+            if (title) {
+              logger.warn(`derived title "${title}" for ${entry.id}`);
+              entry = { ...entry, data: { ...entry.data, title } };
+            }
+          }
+          return parseData(entry);
+        },
+      });
     },
   };
 }
 ```
 
-- [ ] **Step 2: Probe the store shape** — before trusting Step 1's `store.set` call, temporarily add `console.log(JSON.stringify([...ctx.store.entries()][0]))` inside the loop, run the Task 2 local build, and inspect: confirm `entry.body` or `entry.filePath` is present and that `store.set({ ...entry, id, ... })` persists (the build now succeeds and the log shows the derived titles). Adjust the `set` call to whatever shape Astro's store actually requires (some versions key entries internally), then remove the probe log.
-- [ ] **Step 3: Wire it in** — `src/content.config.ts`: replace `import { docsLoader } from "@astrojs/starlight/loaders";` with `import { docsLoaderWithDerivedTitles } from "./derived-title-loader.mjs";` and change `loader: docsLoader()` to `loader: docsLoaderWithDerivedTitles()`.
-- [ ] **Step 4: Run the Task 2 build locally** — the exact Step 2 command from Task 2 now succeeds; all three grep assertions pass against `dist`.
-- [ ] **Step 5: Full local checks** — `bun run check && bun run test` — green.
-- [ ] **Step 6: Commit**
+- [x] **Step 2: Probe the store shape** — the probe ran inside a wrapped `parseData` (no store entry was ever observable, since validation throws inside the inner load); observed entry shape `{"id":"concepts/no-heading","data":{},"filePath":"/abs/path.md"}` — no `body` at this seam, `filePath` absolute; ids collapse a trailing index. This falsified the post-load premise and produced the parseData mechanism above.
+- [x] **Step 3: Wire it in** — `src/content.config.ts`: replace `import { docsLoader } from "@astrojs/starlight/loaders";` with `import { docsLoaderWithDerivedTitles } from "./derived-title-loader.mjs";` and change `loader: docsLoader()` to `loader: docsLoaderWithDerivedTitles()`.
+- [x] **Step 4: Run the Task 2 build locally** — the exact Step 2 command from Task 2 now succeeds; all three grep assertions pass against `dist`.
+- [x] **Step 5: Full local checks** — `bun run check && bun run test` — green.
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/derived-title-loader.mjs src/content.config.ts
