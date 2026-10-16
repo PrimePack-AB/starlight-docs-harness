@@ -170,9 +170,9 @@ Expected: FAIL with `InvalidContentEntryDataError ... title: Required` — this 
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
           bun run build
-          grep -q '>H1 Only Guide<' dist/guides/h1-only/index.html
+          grep -q '<title>H1 Only Guide' dist/guides/h1-only/index.html
           grep -q '>No heading<' dist/concepts/no-heading/index.html
-          grep -q '>Reference<' dist/reference/index.html
+          grep -q '<title>Reference' dist/reference/index.html
 ```
 
 - [ ] **Step 4: Commit**
