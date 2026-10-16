@@ -1,5 +1,5 @@
 export function pagesProjectName(explicit, repository) {
-  const repoSegment = repository.split("/").pop() ?? "";
+  const repoSegment = repository.split("/").pop();
   return (explicit || repoSegment)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
