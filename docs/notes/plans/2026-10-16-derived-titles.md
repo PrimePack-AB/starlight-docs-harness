@@ -110,7 +110,7 @@ export function deriveTitle(body, id) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes** — `bun run test` — all suites green (existing 35 + 6 new).
+- [ ] **Step 4: Run test to verify it passes** — `bun run test` — all suites green (existing 35 plus the new cases: 6 initially, 9 after the review hardening).
 - [ ] **Step 5: Commit**
 
 ```bash
