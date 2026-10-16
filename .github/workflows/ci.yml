@@ -82,6 +82,17 @@ jobs:
           test -f dist/favicon.svg
           if grep -rq 'href="\.\./' dist --include='*.html'; then echo 'relative href survived rewriting'; exit 1; fi
           if grep -rPq 'href="(?!https?://|/)[^"]*\.md"' dist --include='*.html'; then echo 'relative .md href survived rewriting'; exit 1; fi
+      - name: Smoke build against untitled sample docs
+        env:
+          DOCS_DIR: ${{ github.workspace }}/tests/sample-docs-untitled/docs
+          EXCLUDE_DIRS: notes
+          SITE_BASE: /
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          bun run build
+          grep -q '>H1 Only Guide<' dist/guides/h1-only/index.html
+          grep -q '>No heading<' dist/concepts/no-heading/index.html
+          grep -q '>Reference<' dist/reference/index.html
   self-test:
     runs-on: ubuntu-latest
     steps:
