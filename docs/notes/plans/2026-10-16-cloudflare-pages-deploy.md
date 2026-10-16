@@ -445,6 +445,7 @@ Expected: `check`, `self-test`, and `self-test-cloudflare` all pass. Per the CI 
 - [ ] **Step 2: Manual deploy validation (requires the user's Cloudflare account)**
 
 Mark ready and merge per the repository's usual flow after review; then, on `main`, from a scratch clone (or via a temporary workflow dispatching the action with real secrets against a throwaway project), confirm one real deployment succeeds and the site serves at `https://<project>.pages.dev`. This is the deployability check that replaces the nonexistent `--dry-run` flag. Do not tag before this passes.
+Run the validation from a clean, non-agent shell: wrangler 4.x detects agent environments (for example a `CLAUDECODE` variable) and silently delegates new-project Pages deploys to Workers static assets, which would create the wrong product and invalidate the check.
 
 - [ ] **Step 3: Tag the release**
 
