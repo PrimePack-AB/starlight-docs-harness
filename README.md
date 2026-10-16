@@ -31,6 +31,14 @@ hero:
 Hero `actions` links are used verbatim rather than rewritten, so write them as site routes including the base path, or as absolute URLs.
 A hero `image.file` path resolves against the mounted tree, so the image must sit in a mounted subdirectory; a subdirectory holding only images still appears as a sidebar section.
 
+## Page titles
+
+Every page renders with a title.
+Explicit `title` frontmatter wins; without one the harness derives the title from the page's first `# ` heading, falling back to the directory name for `index` and `README` pages and to the filename otherwise.
+The heading search is naive: a commented line inside a fenced code block counts as a heading when it comes first.
+Heading-derived titles keep inline markup as written, asterisks included.
+The build log names each derived title on a fresh sync, so add explicit frontmatter wherever the derived wording is not what you want.
+
 ## MDX components
 
 Pages written as `.mdx`, including a root `index.mdx`, can import Starlight's built-in components:
@@ -91,7 +99,7 @@ bun run dev
 Add the composite action to a workflow that has the consumer repository checked out; it builds the site and, with the default target, uploads the `github-pages` artifact.
 
 ```yaml
-- uses: PrimePack-AB/starlight-docs-harness@v1.4
+- uses: PrimePack-AB/starlight-docs-harness@v1.5
   with:
     repo-url: https://github.com/owner/consumer
 ```
@@ -122,7 +130,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: PrimePack-AB/starlight-docs-harness@v1.4
+      - uses: PrimePack-AB/starlight-docs-harness@v1.5
         with:
           repo-url: https://github.com/owner/consumer
   deploy:
@@ -149,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: PrimePack-AB/starlight-docs-harness@v1.4
+      - uses: PrimePack-AB/starlight-docs-harness@v1.5
         with:
           repo-url: https://github.com/owner/consumer
           deploy-target: cloudflare
