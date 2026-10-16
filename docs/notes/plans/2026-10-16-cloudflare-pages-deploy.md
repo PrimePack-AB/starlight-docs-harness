@@ -270,9 +270,16 @@ runs:
         DEPLOY_TARGET: ${{ inputs.deploy-target }}
         PROJECT_NAME: ${{ inputs.project-name }}
       run: |
+        case "$DEPLOY_TARGET" in
+          github-pages|cloudflare) ;;
+          *)
+            echo "deploy-target must be github-pages or cloudflare, got '$DEPLOY_TARGET'" >&2
+            exit 1
+            ;;
+        esac
         if [ "$DEPLOY_TARGET" = cloudflare ]; then
           project_name="$(bun scripts/pages-project-name.mjs "$PROJECT_NAME" "${GITHUB_REPOSITORY##*/}")"
-          echo "PROJECT_NAME=$project_name" >> "$GITHUB_ENV"
+          echo "HARNESS_PROJECT_NAME=$project_name" >> "$GITHUB_ENV"
           export SITE_URL="${SITE_URL:-https://${project_name}.pages.dev}"
           export SITE_BASE="${SITE_BASE:-/}"
         else
@@ -300,15 +307,16 @@ runs:
           echo '  CLOUDFLARE_API_TOKEN: <secrets.CLOUDFLARE_API_TOKEN>' >&2
           exit 1
         fi
-        node_modules/.bin/wrangler pages project create "${PROJECT_NAME:?}" --production-branch "$REPO_REF" >/dev/null 2>&1 || true
-        node_modules/.bin/wrangler pages deploy dist --project-name "${PROJECT_NAME:?}" --branch "$REPO_REF" --commit-hash "$GITHUB_SHA"
+        node_modules/.bin/wrangler pages project create "${HARNESS_PROJECT_NAME:?}" --production-branch "$REPO_REF" >/dev/null 2>&1 || true
+        node_modules/.bin/wrangler pages deploy dist --project-name "${HARNESS_PROJECT_NAME:?}" --branch "$REPO_REF" --commit-hash "$GITHUB_SHA"
 ```
 
 Notes for the implementer:
 - The deploy step invokes `node_modules/.bin/wrangler` directly instead of the plan's original `bunx wrangler` — a quality-review decision (authorized deviation) so a missing local install fails loudly rather than letting bunx fetch an unpinned wrangler from the registry.
 - `SITE_URL` is deliberately absent from the step `env:` — a workflow-level `SITE_URL` override reaches the script through the inherited environment, preserving the documented custom-domain mechanism.
 - The `pages project create ... || true` swallow is safe: any real authentication or network failure surfaces in the deploy that immediately follows; only the "already exists" case is tolerated.
-- `PROJECT_NAME` reaches the deploy step through `GITHUB_ENV` written by the build step; `${PROJECT_NAME:?}` fails loudly if that contract breaks.
+- The validation gate and the `HARNESS_PROJECT_NAME` namespacing are Task 4 review fixes (authorized deviations), applied in commit 292d253 after the quality review found the silent no-op on unrecognized targets and the generic `PROJECT_NAME` leaking job-wide through `GITHUB_ENV`.
+- `HARNESS_PROJECT_NAME` reaches the deploy step through `GITHUB_ENV` written by the build step; `${HARNESS_PROJECT_NAME:?}` fails loudly if that contract breaks.
 - The guard message avoids `${{ }}` expressions so nothing is interpolated by GitHub before bash runs.
 
 - [ ] **Step 2: Sanity-check YAML locally**
