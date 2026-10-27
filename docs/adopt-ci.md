@@ -56,7 +56,8 @@ order and honor the hard stops.
    repository's `docs/`:
 
    Run this from the consuming repository's root; it captures what it
-   needs before descending into the scratch clone:
+   needs before descending into the scratch clone. The local build must
+   exclude the same directories CI excludes:
 
    ```bash
    REPO_ROOT="$PWD"
