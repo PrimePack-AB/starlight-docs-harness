@@ -94,6 +94,11 @@ REPO_URL=https://github.com/owner/consumer \
 bun run dev
 ```
 
+## Guided adoption
+
+The fastest path for a new repository is a paste: open an LLM coding session in the consuming repository and paste the block from [docs/adopt-ci.md](docs/adopt-ci.md) with its two parameters filled (`SITE`, `EXCLUDE`).
+The session writes the workflow, verifies the build locally against the pinned tag, and reports the two human steps — the token secret and the custom-domain attach — without pushing anything.
+
 ## Usage as an action
 
 Add the composite action to a workflow that has the consumer repository checked out; it builds the site and, with the default target, uploads the `github-pages` artifact.
@@ -120,7 +125,8 @@ Set a workflow-level `SITE_URL` environment variable to override the origin, for
 
 User-pages repositories (`<owner>.github.io`) serve from the site root and must pass `base: /` instead of relying on the derived default.
 
-With `deploy-target: cloudflare` the origin defaults to `https://<project>.pages.dev` and the base path to `/`; a workflow-level `SITE_URL` override points the build at a custom domain, which you then add in the Cloudflare dashboard.
+With `deploy-target: cloudflare` the origin defaults to `https://<project>.pages.dev` and the base path to `/`.
+The full recipe for pointing the build at a custom domain lives in [Custom domains](#custom-domains).
 
 With the default `github-pages` target the action only uploads the artifact; the consuming workflow deploys it with `actions/deploy-pages` afterwards:
 
@@ -173,3 +179,13 @@ To follow the triggering branch instead, pass `repo-ref: ${{ github.ref_name }}`
 The first deployment creates the project with `repo-ref` as its production branch, so give the first run the `repo-ref` you will treat as production; a first run from another branch pins production there and later `main` deployments silently become previews.
 
 Pin the action by commit SHA in the `uses:` line if immutability matters to you; published tags are never force-moved, but a SHA pin removes even that assumption.
+
+### Custom domains
+
+A custom domain needs three things, in this order.
+
+1. A workflow-level `SITE_URL: https://docs.example.com` env, so the build stamps canonical URLs and the sitemap with the hostname.
+2. A first successful deployment from `main`: it creates the Pages project (named after the repository, normalized) with `main` as its production branch.
+   A first run from another branch pins production there, and later `main` deployments silently become previews.
+3. Attaching the domain in the Cloudflare dashboard (Workers & Pages → the project → Custom domains).
+   When the domain's zone is on the same account, DNS and the certificate are provisioned automatically; nothing is added by hand.
