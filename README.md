@@ -88,6 +88,7 @@ git clone https://github.com/PrimePack-AB/starlight-docs-harness
 cd starlight-docs-harness
 bun install
 DOCS_DIR=/absolute/path/to/consumer/docs \
+EXCLUDE_DIRS=notes,plans \
 SITE_TITLE=consumer \
 SITE_BASE=/consumer \
 REPO_URL=https://github.com/owner/consumer \
