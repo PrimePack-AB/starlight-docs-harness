@@ -7,6 +7,7 @@ The consumer keeps writing plain markdown in `docs/`; the harness supplies the s
 
 At build time each rendered subdirectory of the consumer's `docs/` directory is symlinked into `src/content/docs/`, so every subdirectory becomes a sidebar section.
 Subdirectories named in `EXCLUDE_DIRS` (default `notes`) are not linked and do not render.
+The reserved `files/` subdirectory is not linked either; it ships verbatim instead (see [Static files](#static-files)).
 
 The site root renders the consumer's `docs/index.md` or `docs/index.mdx` when one exists, with the same link rewriting and frontmatter handling as every other page.
 Without one, the harness's bundled landing page renders instead; having both `index.md` and `index.mdx` fails the build.
@@ -30,6 +31,20 @@ hero:
 
 Hero `actions` links are used verbatim rather than rewritten, so write them as site routes including the base path, or as absolute URLs.
 A hero `image.file` path resolves against the mounted tree, so the image must sit in a mounted subdirectory; a subdirectory holding only images still appears as a sidebar section.
+
+## Static files
+
+A `files/` subdirectory of the consumer's `docs/` directory ships verbatim: every file in it lands on the built site under `<base>/files/` unchanged, subdirectories included, with no rendering and no sidebar entry.
+A docs tree without `docs/files/` builds exactly as before.
+
+This is the path for downloadable artifacts, for example a Firefox add-on kept at `docs/files/playlog.xpi` and linked from a page:
+
+````markdown
+[Install the add-on](files/playlog.xpi)
+````
+
+Relative markdown links into `files/` rewrite to `/files/` site routes like links between pages, so the example above serves the file itself.
+The name `files` is reserved: it never becomes a content mount, and listing it in `EXCLUDE_DIRS` fails the build with a reserved-name error.
 
 ## Page titles
 
@@ -78,6 +93,7 @@ The harness ships a neutral default `favicon.svg`, which every page links as `<b
 Relative markdown links between mounted pages become site routes, so a `[guide](../guides/guide.md)` reference renders as a normal site URL under the base path.
 A link to the root index, such as `[home](../index.md)`, becomes the site root when the root index is mounted.
 Links to files outside the rendered tree, such as fixtures, excluded notes, and source code, become absolute GitHub `blob` or `tree` URLs built from `REPO_URL` and `REPO_REF` (default `main`).
+Links into the reserved `files/` tree instead become `/files/` site routes ([Static files](#static-files)).
 
 ## Local preview
 

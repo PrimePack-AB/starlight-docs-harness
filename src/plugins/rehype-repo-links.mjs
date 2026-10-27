@@ -7,9 +7,10 @@ const MD_EXT = /\.(md|mdx)$/;
 
 /**
  * Rewrite relative links in docs pages: targets inside mounted docs
- * subdirectories, and the docs directory's root index when it has one, become
- * site routes; every other relative target becomes an
- * absolute GitHub blob or tree URL against the source repository. Unusable
+ * subdirectories, the docs directory's root index when it has one, and files
+ * inside the reserved `files/` subdirectory become site routes; every other
+ * relative target becomes an absolute GitHub blob or tree URL against the
+ * source repository. Unusable
  * targets (missing files, targets outside the repository) are reported as
  * vfile warnings and otherwise rewritten or left as-is unchanged.
  */
@@ -23,11 +24,19 @@ export function rehypeRepoLinks({ docsDir, excludeDirs = ["notes"], baseUrl = ""
   };
 
   const toRoute = (target, fragment, realFile, warn) => {
-    if (!MD_EXT.test(target)) return null;
     const resolved = path.resolve(path.dirname(realFile), target);
     const rel = path.relative(docsDir, resolved);
     if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
     if (landingPage && rel === landingPage) return `${baseUrl}/${fragment}`;
+    if (rel.split(path.sep)[0] === "files") {
+      if (!fs.existsSync(resolved)) {
+        warn(`files link target does not exist: ${rel}`);
+      }
+      if (fs.statSync(resolved, { throwIfNoEntry: false })?.isDirectory()) return null;
+      const route = rel.split(path.sep).map(encodeURIComponent).join("/");
+      return `${baseUrl}/${route}${fragment}`;
+    }
+    if (!MD_EXT.test(target)) return null;
     if (!mounts.has(rel.split(path.sep)[0])) return null;
     if (!fs.existsSync(resolved)) {
       warn(`mounted docs link target does not exist: ${rel}`);

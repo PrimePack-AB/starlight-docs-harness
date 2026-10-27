@@ -3,10 +3,15 @@ import path from "node:path";
 
 export const ROOT_INDEX_NAMES = ["index.md", "index.mdx"];
 
+// Reserved top-level docs subdirectories that never become content mounts:
+// `files` ships verbatim at /files/ through public/ (scripts/link-content.sh).
+export const RESERVED_DIR_NAMES = ["files"];
+
 export function mountedDirs(docsDir, excludeDirs) {
   return fs
     .readdirSync(docsDir, { withFileTypes: true })
-    .filter((entry) => !entry.name.startsWith(".") && !excludeDirs.includes(entry.name))
+    .filter((entry) => !entry.name.startsWith(".") && !RESERVED_DIR_NAMES.includes(entry.name))
+    .filter((entry) => !excludeDirs.includes(entry.name))
     .filter((entry) => fs.statSync(path.join(docsDir, entry.name), { throwIfNoEntry: false })?.isDirectory() ?? false)
     .map((entry) => entry.name)
     .sort();

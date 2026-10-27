@@ -24,6 +24,7 @@ beforeAll(() => {
   fs.mkdirSync(path.join(docsDir, "guides"), { recursive: true });
   fs.mkdirSync(path.join(docsDir, "development"), { recursive: true });
   fs.mkdirSync(path.join(docsDir, "notes", "sandbox"), { recursive: true });
+  fs.mkdirSync(path.join(docsDir, "files"), { recursive: true });
   fs.mkdirSync(path.join(tmp, "consumer", "tests", "fixtures"), { recursive: true });
   fs.writeFileSync(path.join(docsDir, "concepts", "products.md"), '---\ntitle: "Products"\n---\n');
   fs.writeFileSync(path.join(docsDir, "concepts", "api-index.md"), '---\ntitle: "API index"\n---\n');
@@ -31,9 +32,13 @@ beforeAll(() => {
   fs.writeFileSync(path.join(docsDir, "development", "index.md"), '---\ntitle: "Development"\n---\n');
   fs.writeFileSync(path.join(docsDir, "guides", "lookups.md"), '---\ntitle: "Lookups"\n---\n');
   fs.writeFileSync(path.join(docsDir, "notes", "sandbox", "findings.md"), '---\ntitle: "Findings"\n---\n');
+  fs.writeFileSync(path.join(docsDir, "index.md"), '---\ntitle: "Home"\n---\n');
+  fs.writeFileSync(path.join(docsDir, "files", "hello.txt"), "hello\n");
+  fs.writeFileSync(path.join(docsDir, "files", "my add-on.xpi"), "xpi\n");
   fs.writeFileSync(path.join(tmp, "consumer", "tests", "fixtures", "booking.json"), "{}\n");
   fs.symlinkSync(path.join(docsDir, "concepts"), path.join(mounts, "concepts"), "dir");
   fs.symlinkSync(path.join(docsDir, "guides"), path.join(mounts, "guides"), "dir");
+  fs.symlinkSync(path.join(docsDir, "index.md"), path.join(mounts, "index.md"), "file");
 });
 
 afterAll(() => {
@@ -123,6 +128,25 @@ it("rewrites directory links to tree URLs", () => {
   expect(apply("../concepts")).toBe(
     "https://github.com/PrimePack-AB/karrio-dhl-freight-sweden/tree/main/docs/concepts",
   );
+});
+
+it("rewrites links into the reserved files tree to verbatim site routes", () => {
+  expect(apply("../files/hello.txt")).toBe("/karrio-dhl-freight-sweden/files/hello.txt");
+  expect(apply("../files/my add-on.xpi")).toBe("/karrio-dhl-freight-sweden/files/my%20add-on.xpi");
+});
+
+it("rewrites files links from the root index against the site root", () => {
+  expect(apply("files/hello.txt", path.join(mounts, "index.md"))).toBe("/karrio-dhl-freight-sweden/files/hello.txt");
+});
+
+it("rewrites directory links into the files tree to tree URLs", () => {
+  expect(apply("../files")).toBe("https://github.com/PrimePack-AB/karrio-dhl-freight-sweden/tree/main/docs/files");
+});
+
+it("warns when a files target does not exist", () => {
+  const { href, messages } = transform("../files/ghost.xpi");
+  expect(href).toBe("/karrio-dhl-freight-sweden/files/ghost.xpi");
+  expect(messages).toEqual(["files link target does not exist: files/ghost.xpi"]);
 });
 
 it("warns when a mounted docs target does not exist", () => {

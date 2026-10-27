@@ -64,6 +64,7 @@ Work through the steps in order and honor the hard stops.
    `EXCLUDE_DIRS` carries the workflow's `exclude` input into the local build; without it, local verification renders the private directories that CI excludes, so the two builds diverge silently.
 
    Confirm `dist/` renders the mounted sections and contains nothing from `EXCLUDE`.
+   When `docs/files/` exists, also confirm its contents appear unchanged under `dist/files/`.
    Install bun from https://bun.sh if it is absent.
 4. Commit the workflow on a working branch.
    Do not push.

@@ -3,3 +3,4 @@ dist/
 logs/
 .astro/
 src/content/docs/
+public/files

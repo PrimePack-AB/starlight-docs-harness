@@ -35,6 +35,12 @@ it("ignores mermaid fences that only appear in excluded directories", () => {
   expect(hasMermaid(docsDir, ["notes"])).toBe(false);
 });
 
+it("ignores mermaid fences inside the reserved files directory", () => {
+  fs.mkdirSync(path.join(docsDir, "files"), { recursive: true });
+  write("files/flow.md", diagram);
+  expect(hasMermaid(docsDir, ["notes"])).toBe(false);
+});
+
 it("ignores mermaid fences in unmounted top-level files and non-markdown files", () => {
   write("README.md", diagram);
   write("guides/flow.txt", diagram);
