@@ -169,3 +169,34 @@ it("warns and leaves the href when a target is outside the repository", () => {
   expect(href).toBe("../../../outside.md");
   expect(messages).toEqual(["link target is outside the repository: ../../../outside.md"]);
 });
+
+it("rewrites directory-style links to mounted pages to site routes", () => {
+  expect(apply("../concepts/products/")).toBe("/karrio-dhl-freight-sweden/concepts/products/");
+  expect(apply("../concepts/products")).toBe("/karrio-dhl-freight-sweden/concepts/products/");
+});
+
+it("keeps fragments on directory-style links to mounted pages", () => {
+  expect(apply("../concepts/products/#the-eu-vat-area")).toBe(
+    "/karrio-dhl-freight-sweden/concepts/products/#the-eu-vat-area",
+  );
+});
+
+it("rewrites directory-style links from the root index to mounted pages", () => {
+  expect(apply("guides/lookups/", path.join(mounts, "index.md"))).toBe("/karrio-dhl-freight-sweden/guides/lookups/");
+});
+
+it("rewrites directory-style links to section indexes to their section-root route", () => {
+  expect(apply("../development/")).toBe("/karrio-dhl-freight-sweden/development/");
+});
+
+it("keeps tree URLs for existing directory links without a backing page", () => {
+  expect(apply("../concepts/")).toBe(
+    "https://github.com/PrimePack-AB/karrio-dhl-freight-sweden/tree/main/docs/concepts",
+  );
+});
+
+it("falls back to a blob URL when a directory-style target matches no file", () => {
+  const { href, messages } = transform("../concepts/ghost/");
+  expect(href).toBe("https://github.com/PrimePack-AB/karrio-dhl-freight-sweden/blob/main/docs/concepts/ghost");
+  expect(messages).toEqual(["repository link target does not exist: docs/concepts/ghost"]);
+});

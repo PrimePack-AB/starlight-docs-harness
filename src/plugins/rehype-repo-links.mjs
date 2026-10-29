@@ -36,12 +36,19 @@ export function rehypeRepoLinks({ docsDir, excludeDirs = ["notes"], baseUrl = ""
       const route = rel.split(path.sep).map(encodeURIComponent).join("/");
       return `${baseUrl}/${route}${fragment}`;
     }
-    if (!MD_EXT.test(target)) return null;
-    if (!mounts.has(rel.split(path.sep)[0])) return null;
-    if (!fs.existsSync(resolved)) {
-      warn(`mounted docs link target does not exist: ${rel}`);
+    let sourceRel = rel;
+    if (!MD_EXT.test(target)) {
+      const candidates = [`${resolved}.md`, path.join(resolved, "index.md")];
+      const source = candidates.find((candidate) => fs.statSync(candidate, { throwIfNoEntry: false })?.isFile());
+      if (!source) return null;
+      sourceRel = path.relative(docsDir, source);
+      if (landingPage && sourceRel === landingPage) return `${baseUrl}/${fragment}`;
     }
-    const segments = rel.replace(MD_EXT, "").split(path.sep);
+    if (!mounts.has(sourceRel.split(path.sep)[0])) return null;
+    if (!fs.existsSync(resolved) && !fs.existsSync(path.resolve(docsDir, sourceRel))) {
+      warn(`mounted docs link target does not exist: ${sourceRel}`);
+    }
+    const segments = sourceRel.replace(MD_EXT, "").split(path.sep);
     if (segments.at(-1) === "index") segments.pop();
     const route = segments.map((segment) => githubSlug(segment)).join("/");
     return `${baseUrl}/${route}/${fragment}`;
