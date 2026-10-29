@@ -91,6 +91,7 @@ The harness ships a neutral default `favicon.svg`, which every page links as `<b
 ## How links rewrite
 
 Relative markdown links between mounted pages become site routes, so a `[guide](../guides/guide.md)` reference renders as a normal site URL under the base path.
+Directory-style targets resolve the same way when a `target.md` or `target/index.md` backs them, so `[guide](../guides/getting-started/)` also renders as a site route; a directory without a backing page keeps its `tree` URL.
 A link to the root index, such as `[home](../index.md)`, becomes the site root when the root index is mounted.
 Links to files outside the rendered tree, such as fixtures, excluded notes, and source code, become absolute GitHub `blob` or `tree` URLs built from `REPO_URL` and `REPO_REF` (default `main`).
 Links into the reserved `files/` tree instead become `/files/` site routes ([Static files](#static-files)).
